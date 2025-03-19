@@ -25,7 +25,7 @@ import static com.gmail.jaboll.mc.SmithingGlintClient.getCustomType;
 @Mixin(EquipmentLayerRenderer.class)
 public class RenderTypeMixin {
     @ModifyVariable(method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/ResourceLocation;)V",
-            at = @At("STORE"), name = "vertexConsumer")
+            at = @At("STORE"), print = true, ordinal = 0)
     private VertexConsumer modifyVertexConsumer(VertexConsumer value,
 		EquipmentClientInfo.LayerType layerType,
 		ResourceKey<EquipmentAsset> resourceKey,
@@ -35,7 +35,8 @@ public class RenderTypeMixin {
 		MultiBufferSource multiBufferSource,
 		int i,
 		@Nullable ResourceLocation resourceLocation,
-		@Local(name = "resourceLocation2") ResourceLocation resourceLocation2, @Local boolean bl
+		@Local(ordinal = 1) ResourceLocation resourceLocation2,
+		@Local boolean bl
 	) {
 		RenderType renderType = RenderType.armorCutoutNoCull(resourceLocation2);
 		ArmorTrim armorTrim = itemStack.get(DataComponents.TRIM);
