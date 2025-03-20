@@ -3,7 +3,9 @@
 	"package": "com.gmail.jaboll.mc.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"RenderBuffersMixin",
+		"BufferMixins",
+		"MinecraftMixin",
+		"PalettedPermutationsMixin",
 		"RenderTypeMixin"
 	],
 	"injectors": {

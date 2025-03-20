@@ -24,8 +24,9 @@ import static com.gmail.jaboll.mc.SmithingGlintClient.getCustomType;
 
 @Mixin(EquipmentLayerRenderer.class)
 public class RenderTypeMixin {
+
     @ModifyVariable(method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/ResourceLocation;)V",
-            at = @At("STORE"), print = true, ordinal = 0)
+            at = @At("STORE"), ordinal = 0)
     private VertexConsumer modifyVertexConsumer(VertexConsumer value,
 		EquipmentClientInfo.LayerType layerType,
 		ResourceKey<EquipmentAsset> resourceKey,
@@ -45,6 +46,8 @@ public class RenderTypeMixin {
 		}
 		if (armorTrim != null) {
 			String materialKey = armorTrim.material().value().assetName();
+
+
 			return VertexMultiConsumer.create(multiBufferSource.getBuffer(getCustomType(materialKey)), multiBufferSource.getBuffer(renderType));
 		}
         return VertexMultiConsumer.create(multiBufferSource.getBuffer(RenderType.armorEntityGlint()), multiBufferSource.getBuffer(renderType));
