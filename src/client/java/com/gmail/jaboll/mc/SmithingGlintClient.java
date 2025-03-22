@@ -29,7 +29,6 @@ public class SmithingGlintClient implements ClientModInitializer {
 	public static boolean modEnabled = true;
 	public static boolean runtimeTrimsLoaded;
 	private static NativeImage enchantmentGlintImage = null;
-	private static final float[] minMaxBrightness = {0, 0};
 	private static SequencedMap<RenderType, ByteBufferBuilder> buffersMap = null;
 	private static final Map<String, RenderType> CUSTOM_TYPES = new HashMap<>();
 
@@ -111,35 +110,15 @@ public class SmithingGlintClient implements ClientModInitializer {
 
 	public static NativeImage applyTintMultiply(int mainColor){
 		NativeImage tintedImage = new NativeImage(enchantmentGlintImage.getWidth(), enchantmentGlintImage.getHeight(), false);
-		float[] hsv = Color.RGBtoHSB(ARGB.red(mainColor), ARGB.green(mainColor), ARGB.blue(mainColor), null);
-		boolean minMaxPopulated = (minMaxBrightness[0] != 0 && minMaxBrightness[1] != 0);
+//		float[] hsv = Color.RGBtoHSB(ARGB.red(mainColor), ARGB.green(mainColor), ARGB.blue(mainColor), null);
+		int mainLuminance = Math.round(ARGB.red(mainColor) * 0.299F + ARGB.green(mainColor) * 0.587F + ARGB.blue(mainColor) * 0.0722F);
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
 				int pixel = enchantmentGlintImage.getPixel(x, y);
-				int greyVal = (int)((float)ARGB.red(pixel) * 0.3F + (float)ARGB.green(pixel) * 0.59F + (float)ARGB.blue(pixel) * 0.11F);
-				int finalColor = ARGB.color(Math.min(255, greyVal+26), mainColor);
+				int luminance = Math.round(ARGB.red(pixel) * 0.299F + ARGB.green(pixel) * 0.587F + ARGB.blue(pixel) * 0.0722F);
+				int diffrence = Math.round((127-mainLuminance)/255f * luminance);
+				int finalColor = ARGB.color(Math.min(255, luminance+diffrence+26), mainColor); //26 is the 10% transparency threshold of 255
 				tintedImage.setPixel(x, y, finalColor);
-
-				if (!minMaxPopulated){
-					minMaxBrightness[0] = Math.min(minMaxBrightness[0], greyVal);
-					minMaxBrightness[1] = Math.max(minMaxBrightness[1], greyVal);
-				}
-			}
-		}
-//		try {tintedImage.writeToFile(Paths.get("glints/"+material+"_tinted.png"));} catch (IOException ignored) {}
-		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
-			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
-				int color = tintedImage.getPixel(x, y);
-				int limit = 80;
-				int low = 26;
-				if (hsv[2] > 0.3){
-					limit = 110;
-					low = 60;
-					color = ARGB.color(ARGB.alpha(color), Color.HSBtoRGB(hsv[0], hsv[1], hsv[2]*0.28f));
-				}
-
-				int newAlpha = Math.round((ARGB.alpha(color) - minMaxBrightness[0]) / (minMaxBrightness[1] - minMaxBrightness[0] + 0.4F) * (limit - low) + low); //Lazy avoid dev-by-0
-				tintedImage.setPixel(x, y, ARGB.color(newAlpha, color));
 			}
 		}
 //		try {tintedImage.writeToFile(Paths.get("glints/"+material+"_final.png"));} catch (IOException ignored) {}
