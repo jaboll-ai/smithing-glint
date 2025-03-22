@@ -10,14 +10,13 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.FastColor.ARGB32;
-import net.minecraft.util.FastColor.ABGR32;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.TriState;
 
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SequencedMap;
@@ -40,7 +39,7 @@ public class SmithingGlintClient implements ClientModInitializer {
 		}
 	}
 
-	private static void generateCustomType(ResourceManager resourceManager, String material, int[] pixels, boolean argb){
+	private static void generateCustomType(ResourceManager resourceManager, String material, int[] pixels){
 		if (enchantmentGlintImage == null) {
 			try {
 				InputStream inputStream = resourceManager.open(ResourceLocation.withDefaultNamespace("textures/misc/enchanted_glint_entity.png"));
@@ -50,9 +49,6 @@ public class SmithingGlintClient implements ClientModInitializer {
 				enchantmentGlintImage = new NativeImage(16, 16, false);
 			}
 		}
-		if (argb){
-			pixels = Arrays.stream(pixels).map(ABGR32::fromArgb32).toArray();
-		}
 		NativeImage tintedImage = applyTintMultiply(pixels[0]);
 		try {tintedImage.writeToFile(Paths.get("glints/"+material+".png"));} catch (IOException ignored) {}
 		TextureStateShard shard = createTextureStateFromNativeImage(tintedImage, material);
@@ -61,13 +57,13 @@ public class SmithingGlintClient implements ClientModInitializer {
 		CUSTOM_TYPES.put(material, type);
 	}
 
-	public static RenderType getOrGenerateType(ResourceManager resourceManager, ResourceLocation palette, int[] pixels, boolean argb) {
+	public static RenderType getOrGenerateType(ResourceManager resourceManager, ResourceLocation palette, int[] pixels) {
 		String[] path = palette.getPath().split("/");
 		String material = path[path.length-1];
 		if (CUSTOM_TYPES.containsKey(material)){
 			return getCustomType(material);
 		}
-		generateCustomType(resourceManager, material, pixels, argb);
+		generateCustomType(resourceManager, material, pixels);
 		return getCustomType(material);
 	}
 
@@ -80,7 +76,7 @@ public class SmithingGlintClient implements ClientModInitializer {
 		ResourceLocation textureID = ResourceLocation.fromNamespaceAndPath(MOD_ID, "dynamic/"+assetName);
 		Minecraft.getInstance().getTextureManager().register(textureID, dynamicTexture);
 
-		return new TextureStateShard(textureID, true, false);
+		return new TextureStateShard(textureID, TriState.DEFAULT, false);
 	}
 
 	private static RenderType createArmorRenderType(String name, TextureStateShard textureStateShard){
@@ -119,14 +115,14 @@ public class SmithingGlintClient implements ClientModInitializer {
 		float maxV = 0;
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
-				int pixel = enchantmentGlintImage.getPixelRGBA(x, y);
-				int greyVal = Math.round(ARGB32.red(pixel) * 0.3F + ARGB32.green(pixel) * 0.59F + ARGB32.blue(pixel) * 0.11F);
-				int greyscaled = ARGB32.color(greyVal, greyVal, greyVal);
-				int tintedColor = ARGB32.multiply(greyscaled, mainColor);
-				float[] hsv = Color.RGBtoHSB(ARGB32.red(tintedColor), ARGB32.green(tintedColor), ARGB32.blue(tintedColor), null);
+				int pixel = enchantmentGlintImage.getPixel(x, y);
+				int greyVal = Math.round(ARGB.red(pixel) * 0.3F + ARGB.green(pixel) * 0.59F + ARGB.blue(pixel) * 0.11F);
+				int greyscaled = ARGB.color(greyVal, greyVal, greyVal);
+				int tintedColor = ARGB.multiply(greyscaled, mainColor);
+				float[] hsv = Color.RGBtoHSB(ARGB.red(tintedColor), ARGB.green(tintedColor), ARGB.blue(tintedColor), null);
 				int saturated = Color.HSBtoRGB(hsv[0], hsv[1] > 0.15f ? 1 : hsv[1], hsv[2]);
-				int finalColor = ARGB32.color(greyVal, saturated);
-				tintedImage.setPixelRGBA(x, y, finalColor);
+				int finalColor = ARGB.color(greyVal, saturated);
+				tintedImage.setPixel(x, y, finalColor);
 				min = Math.min(min, greyVal);
 				max = Math.max(max, greyVal);
 				maxV = Math.max(hsv[2], maxV);
@@ -134,10 +130,10 @@ public class SmithingGlintClient implements ClientModInitializer {
 		}
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
-				int color = tintedImage.getPixelRGBA(x, y);
-				int limit = maxV > 0.15 ? 100 : 200;
-				int newAlpha = Math.round((ARGB32.alpha(color) - min) / (max - min + 0.5F) * (limit - 26) + 26);
-				tintedImage.setPixelRGBA(x, y, ARGB32.color(newAlpha, color));
+				int color = tintedImage.getPixel(x, y);
+				int limit = maxV > 0.15 ? 100 : 220;
+				int newAlpha = Math.round((ARGB.alpha(color) - min) / (max - min + 0.5F) * (limit - 26) + 26);
+				tintedImage.setPixel(x, y, ARGB.color(newAlpha, color));
 			}
 		}
 		return tintedImage;

@@ -4,8 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"BufferMixins",
-		"PalettedPermutationsMixin",
-		"RenderTypeMixin"
+		"EquipmentLayerRendererMixin",
+		"PalettedPermutationsMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

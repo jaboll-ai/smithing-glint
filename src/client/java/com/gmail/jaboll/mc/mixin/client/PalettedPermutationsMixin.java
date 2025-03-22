@@ -16,6 +16,6 @@ import static com.gmail.jaboll.mc.SmithingGlintClient.getOrGenerateType;
 public class PalettedPermutationsMixin {
     @Inject(method = "loadPaletteEntryFromImage", at = @At("RETURN"))
     private static void genGlint(ResourceManager resourceManager, ResourceLocation palette, CallbackInfoReturnable<int[]> cir){
-        Minecraft.getInstance().execute(()->getOrGenerateType(resourceManager, palette, cir.getReturnValue(), false)); //Dispatch to render thread
+        Minecraft.getInstance().execute(()->getOrGenerateType(resourceManager, palette, cir.getReturnValue())); //Dispatch to render thread
     }
 }
