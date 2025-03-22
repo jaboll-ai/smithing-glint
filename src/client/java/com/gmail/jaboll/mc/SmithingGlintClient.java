@@ -115,7 +115,7 @@ public class SmithingGlintClient implements ClientModInitializer {
 
 	public static NativeImage applyTintMultiply(int mainColor, String material){
 		NativeImage tintedImage = new NativeImage(enchantmentGlintImage.getWidth(), enchantmentGlintImage.getHeight(), false);
-		float[] hsv = Color.RGBtoHSB(ARGB32.red(mainColor), ARGB32.green(mainColor), ARGB32.blue(mainColor), null);
+//		float[] hsv = Color.RGBtoHSB(ARGB32.red(mainColor), ARGB32.green(mainColor), ARGB32.blue(mainColor), null);
 		int mainLuminance = Math.round(ARGB32.red(mainColor) * 0.299F + ARGB32.green(mainColor) * 0.587F + ARGB32.blue(mainColor) * 0.0722F);
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
