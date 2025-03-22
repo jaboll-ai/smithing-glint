@@ -10,12 +10,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static com.gmail.jaboll.mc.SmithingGlintClient.getOrGenerateType;
+import static com.gmail.jaboll.mc.SmithingGlintClient.modEnabled;
 
 
 @Mixin(PalettedPermutations.class)
 public class PalettedPermutationsMixin {
     @Inject(method = "loadPaletteEntryFromImage", at = @At("RETURN"))
     private static void genGlint(ResourceManager resourceManager, ResourceLocation palette, CallbackInfoReturnable<int[]> cir){
+        if (!modEnabled) return;
         Minecraft.getInstance().execute(()->getOrGenerateType(resourceManager, palette, cir.getReturnValue())); //Dispatch to render thread
     }
 }

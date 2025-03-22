@@ -16,7 +16,6 @@ import net.minecraft.util.TriState;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SequencedMap;
@@ -27,8 +26,10 @@ import static net.minecraft.client.renderer.RenderStateShard.*;
 
 public class SmithingGlintClient implements ClientModInitializer {
 
-	private static NativeImage enchantmentGlintImage = null;
+	public static boolean modEnabled = true;
 	public static boolean runtimeTrimsLoaded;
+	private static NativeImage enchantmentGlintImage = null;
+	private static final float[] minMaxBrightness = {0, 0};
 	private static SequencedMap<RenderType, ByteBufferBuilder> buffersMap = null;
 	private static final Map<String, RenderType> CUSTOM_TYPES = new HashMap<>();
 
@@ -46,11 +47,11 @@ public class SmithingGlintClient implements ClientModInitializer {
 				enchantmentGlintImage = NativeImage.read(inputStream);
 			} catch (IOException e) {
 				LOGGER.error("Failed to load glint texture: ", e);
+				modEnabled = false;
 				enchantmentGlintImage = new NativeImage(16, 16, false);
 			}
 		}
-		NativeImage tintedImage = applyTintMultiply(pixels[0]);
-		try {tintedImage.writeToFile(Paths.get("glints/"+material+".png"));} catch (IOException ignored) {}
+		NativeImage tintedImage = applyTintMultiply(pixels[1]);
 		TextureStateShard shard = createTextureStateFromNativeImage(tintedImage, material);
 		RenderType type = createArmorRenderType(material, shard);
 		registerRenderType(type);
@@ -110,32 +111,38 @@ public class SmithingGlintClient implements ClientModInitializer {
 
 	public static NativeImage applyTintMultiply(int mainColor){
 		NativeImage tintedImage = new NativeImage(enchantmentGlintImage.getWidth(), enchantmentGlintImage.getHeight(), false);
-		int min = 255;
-		int max = 0;
-		float maxV = 0;
+		float[] hsv = Color.RGBtoHSB(ARGB.red(mainColor), ARGB.green(mainColor), ARGB.blue(mainColor), null);
+		boolean minMaxPopulated = (minMaxBrightness[0] != 0 && minMaxBrightness[1] != 0);
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
 				int pixel = enchantmentGlintImage.getPixel(x, y);
-				int greyVal = Math.round(ARGB.red(pixel) * 0.3F + ARGB.green(pixel) * 0.59F + ARGB.blue(pixel) * 0.11F);
-				int greyscaled = ARGB.color(greyVal, greyVal, greyVal);
-				int tintedColor = ARGB.multiply(greyscaled, mainColor);
-				float[] hsv = Color.RGBtoHSB(ARGB.red(tintedColor), ARGB.green(tintedColor), ARGB.blue(tintedColor), null);
-				int saturated = Color.HSBtoRGB(hsv[0], hsv[1] > 0.15f ? 1 : hsv[1], hsv[2]);
-				int finalColor = ARGB.color(greyVal, saturated);
+				int greyVal = (int)((float)ARGB.red(pixel) * 0.3F + (float)ARGB.green(pixel) * 0.59F + (float)ARGB.blue(pixel) * 0.11F);
+				int finalColor = ARGB.color(Math.min(255, greyVal+26), mainColor);
 				tintedImage.setPixel(x, y, finalColor);
-				min = Math.min(min, greyVal);
-				max = Math.max(max, greyVal);
-				maxV = Math.max(hsv[2], maxV);
+
+				if (!minMaxPopulated){
+					minMaxBrightness[0] = Math.min(minMaxBrightness[0], greyVal);
+					minMaxBrightness[1] = Math.max(minMaxBrightness[1], greyVal);
+				}
 			}
 		}
+//		try {tintedImage.writeToFile(Paths.get("glints/"+material+"_tinted.png"));} catch (IOException ignored) {}
 		for (int x = 0; x < enchantmentGlintImage.getWidth(); x++) {
 			for (int y = 0; y < enchantmentGlintImage.getHeight(); y++) {
 				int color = tintedImage.getPixel(x, y);
-				int limit = maxV > 0.15 ? 100 : 220;
-				int newAlpha = Math.round((ARGB.alpha(color) - min) / (max - min + 0.5F) * (limit - 26) + 26);
+				int limit = 80;
+				int low = 26;
+				if (hsv[2] > 0.3){
+					limit = 110;
+					low = 60;
+					color = ARGB.color(ARGB.alpha(color), Color.HSBtoRGB(hsv[0], hsv[1], hsv[2]*0.28f));
+				}
+
+				int newAlpha = Math.round((ARGB.alpha(color) - minMaxBrightness[0]) / (minMaxBrightness[1] - minMaxBrightness[0] + 0.4F) * (limit - low) + low); //Lazy avoid dev-by-0
 				tintedImage.setPixel(x, y, ARGB.color(newAlpha, color));
 			}
 		}
+//		try {tintedImage.writeToFile(Paths.get("glints/"+material+"_final.png"));} catch (IOException ignored) {}
 		return tintedImage;
 	}
 }
